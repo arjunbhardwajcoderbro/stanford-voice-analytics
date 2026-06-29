@@ -2,6 +2,8 @@
 
 A lightweight analytics platform for Retell-powered voice agents.
 
+🚧 Built in one day as an exploration of Retell's platform and voice agent analytics.
+
 🌐 Live Demo: https://stanford-voice-analytics.onrender.com/dashboard
 
 🎓 Example Deployment: Stanford Freshman FAQ Assistant
