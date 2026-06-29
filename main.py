@@ -378,11 +378,14 @@ def dashboard():
     <body>
         <div class="page">
             <div class="hero">
-                <div class="eyebrow">Retell AI + FastAPI + Webhooks</div>
-                <h1>Stanford Freshman Voice Analytics</h1>
-                <p>
-                    A voice FAQ assistant for incoming Stanford students, paired with a backend dashboard that captures Retell webhook events, stores transcripts, and turns conversations into actionable product analytics.
-                </p>
+                <div class="eyebrow">RETELL VOICE AGENT ANALYTICS</div>
+                <h1>Voice Agent Analytics Dashboard</h1>
+			<p>
+				A lightweight analytics platform for Retell-powered voice agents.
+The current demo uses a Stanford Freshman FAQ assistant to
+show webhook ingestion, transcript analysis, cost tracking,
+and product insights.
+			</p>
             </div>
 
             <div class="stats">
