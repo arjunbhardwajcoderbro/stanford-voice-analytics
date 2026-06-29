@@ -382,9 +382,9 @@ def dashboard():
                 <h1>Voice Agent Analytics Dashboard</h1>
 			<p>
 				A lightweight analytics platform for Retell-powered voice agents.
-The current demo uses a Stanford Freshman FAQ assistant to
-show webhook ingestion, transcript analysis, cost tracking,
-and product insights.
+This demo showcases a Stanford Freshman FAQ assistant while
+demonstrating webhook ingestion, transcript analysis,
+conversation analytics, cost tracking, and AI-generated insights.
 			</p>
             </div>
 
