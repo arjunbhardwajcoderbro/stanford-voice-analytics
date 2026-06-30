@@ -1,11 +1,45 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 import json
+import os
 from datetime import datetime
 from collections import Counter
 
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
+
 app = FastAPI()
-CALLS_FILE = "calls.jsonl"
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+
+def get_db_connection():
+    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+
+
+def init_db():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS calls (
+            id SERIAL PRIMARY KEY,
+            received_at TEXT,
+            event TEXT,
+            call_id TEXT,
+            agent_id TEXT,
+            transcript TEXT,
+            call_analysis JSONB,
+            duration_ms INTEGER,
+            call_cost FLOAT,
+            raw_payload JSONB
+        );
+    """)
+
+    conn.commit()
+    cur.close()
+    conn.close()
 
 
 def categorize_call(text):
@@ -27,9 +61,12 @@ def categorize_call(text):
     return "❓ Other"
 
 
+init_db()
+
+
 @app.get("/")
 def home():
-    return {"status": "Stanford FAQ backend is running"}
+    return {"status": "Project Signal backend is running"}
 
 
 @app.post("/webhook")
@@ -49,27 +86,65 @@ async def retell_webhook(request: Request):
         "raw_payload": payload,
     }
 
-    with open(CALLS_FILE, "a") as f:
-        f.write(json.dumps(record) + "\n")
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO calls (
+            received_at,
+            event,
+            call_id,
+            agent_id,
+            transcript,
+            call_analysis,
+            duration_ms,
+            call_cost,
+            raw_payload
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (
+        record["received_at"],
+        record["event"],
+        record["call_id"],
+        record["agent_id"],
+        record["transcript"],
+        json.dumps(record["call_analysis"]),
+        record["duration_ms"],
+        record["call_cost"],
+        json.dumps(record["raw_payload"]),
+    ))
+
+    conn.commit()
+    cur.close()
+    conn.close()
 
     print("Received:", payload.get("event"))
     return {"ok": True}
 
 
 def load_calls():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT *
+        FROM calls
+        WHERE event = 'call_analyzed'
+        ORDER BY id DESC
+    """)
+
+    rows = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
     calls = []
 
-    try:
-        with open(CALLS_FILE) as f:
-            for line in f:
-                item = json.loads(line)
-                if item.get("event") == "call_analyzed":
-                    item["category"] = categorize_call(item.get("transcript"))
-                    calls.append(item)
-    except FileNotFoundError:
-        pass
+    for item in rows:
+        item = dict(item)
+        item["category"] = categorize_call(item.get("transcript"))
+        calls.append(item)
 
-    calls.reverse()
     return calls
 
 
@@ -87,15 +162,23 @@ def dashboard():
     most_asked_topic = topic_counts.most_common(1)[0][0] if topic_counts else "None"
 
     insights = []
+
     if topic_counts:
         top_topic, top_count = topic_counts.most_common(1)[0]
-        insights.append(f"Most questions are about {top_topic}, suggesting this is the highest-friction area for incoming students.")
-    if success_rate >= 90:
-        insights.append("The agent is handling most test calls successfully, which is a good sign for early QA.")
+        insights.append(f"Most questions are about {top_topic}, suggesting this is the highest-friction area for users.")
+
+    if success_rate >= 90 and total_calls > 0:
+        insights.append("The agent is handling most analyzed calls successfully, which is a strong signal for early QA.")
+    elif total_calls > 0:
+        insights.append("Some calls need review. Failed or unclear conversations should be inspected first.")
+
     if avg_duration > 45:
         insights.append("Average calls are relatively long. Shorter answers may improve the voice experience.")
-    else:
-        insights.append("Average call length is concise, which is good for a voice FAQ assistant.")
+    elif total_calls > 0:
+        insights.append("Average call length is concise, which is good for a voice assistant experience.")
+
+    if not insights:
+        insights.append("No calls have been analyzed yet. Connect a Retell webhook and complete a call to populate this dashboard.")
 
     topic_rows = ""
     max_topic_count = max(topic_counts.values()) if topic_counts else 1
@@ -114,10 +197,13 @@ def dashboard():
         </div>
         """
 
+    if not topic_rows:
+        topic_rows = "<p>No topic data yet.</p>"
+
     call_cards = ""
 
     for call in calls:
-        analysis = call.get("call_analysis", {})
+        analysis = call.get("call_analysis") or {}
         successful_call = analysis.get("call_successful")
         success_badge = "Successful" if successful_call else "Needs review"
         success_class = "good" if successful_call else "bad"
@@ -147,10 +233,18 @@ def dashboard():
         </div>
         """
 
+    if not call_cards:
+        call_cards = """
+        <div class="card conversation-card">
+            <h3>No conversations yet</h3>
+            <p>Once Retell sends a <code>call_analyzed</code> webhook event, conversations will appear here.</p>
+        </div>
+        """
+
     html = f"""
     <html>
     <head>
-        <title>Stanford Voice Analytics</title>
+        <title>Project Signal</title>
         <style>
             * {{
                 box-sizing: border-box;
@@ -194,7 +288,7 @@ def dashboard():
 
             .hero p {{
                 margin: 0;
-                max-width: 720px;
+                max-width: 760px;
                 line-height: 1.55;
                 opacity: .95;
                 font-size: 17px;
@@ -367,6 +461,12 @@ def dashboard():
                 overflow: auto;
             }}
 
+            code {{
+                background: #f3f3f3;
+                padding: 2px 5px;
+                border-radius: 5px;
+            }}
+
             @media (max-width: 900px) {{
                 .stats, .grid {{
                     grid-template-columns: 1fr;
@@ -378,14 +478,14 @@ def dashboard():
     <body>
         <div class="page">
             <div class="hero">
-                <div class="eyebrow">RETELL VOICE AGENT ANALYTICS</div>
+                <div class="eyebrow">PROJECT SIGNAL · VOICE AGENT ANALYTICS</div>
                 <h1>Voice Agent Analytics Dashboard</h1>
-			<p>
-				A lightweight analytics platform for Retell-powered voice agents.
-This demo showcases a Stanford Freshman FAQ assistant while
-demonstrating webhook ingestion, transcript analysis,
-conversation analytics, cost tracking, and AI-generated insights.
-			</p>
+                <p>
+                    A lightweight analytics platform for Retell-powered voice agents.
+                    This demo showcases a Stanford Freshman FAQ assistant while demonstrating
+                    webhook ingestion, transcript analysis, conversation analytics,
+                    cost tracking, persistent PostgreSQL storage, and AI-generated insights.
+                </p>
             </div>
 
             <div class="stats">
