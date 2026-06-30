@@ -1,14 +1,14 @@
-# 🎙️ Voice Agent Analytics Dashboard
+# 🚦 Project Signal
 
-> A lightweight analytics platform for Retell-powered voice agents.
+> An AI-powered analytics platform for voice agents.
 
-🚧 **Built in one day as an exploration of Retell's platform and voice agent analytics.**
+> Built with FastAPI, PostgreSQL, Retell AI, and Render.
 
-🌐 **Live Demo:** https://stanford-voice-analytics.onrender.com/dashboard
+🌐 **Live Demo:** https://project-signal.onrender.com/dashboard
 
-🎓 **Example Deployment:** Stanford Freshman FAQ Assistant
+🎙️ **Demo Voice Agent:** Stanford Freshman FAQ Assistant
 
-Update: Project Signal v0.2 now uses PostgreSQL for persistent call analytics.
+**Update:** Project Signal v0.2 now uses PostgreSQL for persistent call analytics.
 ---
 
 # Overview
