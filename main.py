@@ -231,25 +231,25 @@ def dashboard():
 
     failure_cards = ""
 
-for failed in failed_calls:
-    failure_cards += f"""
-    <div class="card conversation-card">
-        <div class="conversation-top">
-            <span class="badge">{failed.get("category")}</span>
-            <span class="status bad">Needs Attention</span>
+    for failed in failed_calls:
+        failure_cards += f"""
+        <div class="card conversation-card">
+            <div class="conversation-top">
+                <span class="badge">{failed.get("category")}</span>
+                <span class="status bad">Needs Attention</span>
+            </div>
+            <h3>{failed.get("summary")}</h3>
+            <p><strong>Suggested Action:</strong> {failed.get("suggestion")}</p>
         </div>
-        <h3>{failed.get("summary")}</h3>
-        <p><strong>Suggested Action:</strong> {failed.get("suggestion")}</p>
-    </div>
-    """
+        """
 
-if not failure_cards:
-    failure_cards = """
-    <div class="card conversation-card">
-        <h3>No failed calls yet</h3>
-        <p>All analyzed calls are currently marked successful.</p>
-    </div>
-    """
+    if not failure_cards:
+        failure_cards = """
+        <div class="card conversation-card">
+            <h3>No failed calls yet</h3>
+            <p>All analyzed calls are currently marked successful.</p>
+        </div>
+        """
 
     call_cards = ""
 
