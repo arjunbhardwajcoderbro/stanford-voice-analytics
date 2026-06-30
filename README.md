@@ -8,6 +8,7 @@
 
 🎓 **Example Deployment:** Stanford Freshman FAQ Assistant
 
+Update: Project Signal v0.2 now uses PostgreSQL for persistent call analytics.
 ---
 
 # Overview
