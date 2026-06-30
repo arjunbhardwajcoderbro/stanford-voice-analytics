@@ -164,8 +164,19 @@ def get_failed_calls(calls):
             elif (call.get("duration_ms") or 0) < 10000:
                 suggestion = "Very short call. Review greeting or call flow."
 
-            elif call.get("category") == "🏠 Housing":
-                suggestion = "Housing questions appear difficult. Consider improving housing FAQs."
+           if not analysis.get("call_successful"):
+
+               if "don't know" in transcript:
+                   suggestion = "The agent lacked information. Consider expanding the knowledge base."
+
+               elif "only answer" in transcript or "stanford" in transcript:
+                   suggestion = "Caller asked an out-of-scope question. No knowledge base changes needed."
+
+               elif (call.get("duration_ms") or 0) < 10000:
+                   suggestion = "Very short conversation. Review the greeting and opening flow."
+
+               else:
+                   suggestion = "Review this conversation to determine why it failed."
 
             failed.append({
                 "summary": analysis.get("call_summary", "No summary"),
