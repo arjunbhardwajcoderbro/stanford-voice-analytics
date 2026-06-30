@@ -147,10 +147,39 @@ def load_calls():
 
     return calls
 
+def get_failed_calls(calls):
+    failed = []
+
+    for call in calls:
+        analysis = call.get("call_analysis") or {}
+
+        if not analysis.get("call_successful"):
+            transcript = (call.get("transcript") or "").lower()
+
+            suggestion = "Review this conversation."
+
+            if "don't know" in transcript or "do not know" in transcript:
+                suggestion = "Expand the knowledge base for this topic."
+
+            elif (call.get("duration_ms") or 0) < 10000:
+                suggestion = "Very short call. Review greeting or call flow."
+
+            elif call.get("category") == "🏠 Housing":
+                suggestion = "Housing questions appear difficult. Consider improving housing FAQs."
+
+            failed.append({
+                "summary": analysis.get("call_summary", "No summary"),
+                "category": call.get("category"),
+                "suggestion": suggestion
+            })
+
+    return failed
+
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard():
     calls = load_calls()
+    failed_calls = get_failed_calls(calls)
 
     total_calls = len(calls)
     successful = sum(1 for c in calls if c.get("call_analysis", {}).get("call_successful"))
@@ -199,6 +228,28 @@ def dashboard():
 
     if not topic_rows:
         topic_rows = "<p>No topic data yet.</p>"
+
+    failure_cards = ""
+
+for failed in failed_calls:
+    failure_cards += f"""
+    <div class="card conversation-card">
+        <div class="conversation-top">
+            <span class="badge">{failed.get("category")}</span>
+            <span class="status bad">Needs Attention</span>
+        </div>
+        <h3>{failed.get("summary")}</h3>
+        <p><strong>Suggested Action:</strong> {failed.get("suggestion")}</p>
+    </div>
+    """
+
+if not failure_cards:
+    failure_cards = """
+    <div class="card conversation-card">
+        <h3>No failed calls yet</h3>
+        <p>All analyzed calls are currently marked successful.</p>
+    </div>
+    """
 
     call_cards = ""
 
@@ -522,6 +573,9 @@ def dashboard():
                     {''.join(f'<div class="insight">{insight}</div>' for insight in insights)}
                 </div>
             </div>
+
+            <h2 class="section-title">🚨 Calls Needing Attention</h2>
+            {failure_cards}
 
             <h2 class="section-title">Recent Conversations</h2>
             {call_cards}
