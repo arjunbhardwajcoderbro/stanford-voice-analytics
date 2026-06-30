@@ -526,15 +526,19 @@ def dashboard():
     <body>
         <div class="page">
             <div class="hero">
-                <div class="eyebrow">PROJECT SIGNAL · VOICE AGENT ANALYTICS</div>
-                <h1>Voice Agent Analytics Dashboard</h1>
+                <div class="eyebrow">PROJECT SIGNAL</div>
+
+                <h1>AI Copilot for Voice Agents</h1>
+
                 <p>
-                    A lightweight analytics platform for Retell-powered voice agents.
-                    This demo showcases a Stanford Freshman FAQ assistant while demonstrating
-                    webhook ingestion, transcript analysis, conversation analytics,
-                    cost tracking, persistent PostgreSQL storage, and AI-generated insights.
+                    Analyze conversations, identify failures, uncover trends, and receive
+                    actionable recommendations to improve voice AI performance.
                 </p>
-            </div>
+
+                <div style="margin-top:24px; font-size:15px; opacity:.9;">
+                    <strong>Current Demo:</strong> Stanford Freshman FAQ Assistant
+                </div>
+        </div>
 
             <div class="stats">
                 <div class="stat">
